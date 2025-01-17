@@ -26,9 +26,35 @@ const SearchBooks = () => {
   // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
   useEffect(() => {
     return () => saveBookIds(savedBookIds);
-  });
+  }, [savedBookIds]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setSavedBookIds(getSavedBookIds());
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const [searchBooks, { data, error }] = useLazyQuery(SEARCH_BOOKS);
+
+  useEffect(() => {
+    if (data) {
+      const bookData = data.searchBooks.map((book) => ({
+        bookId: book.bookId,
+        authors: book.authors || ['No author to display'],
+        title: book.title,
+        description: book.description,
+        image: book.image || '',
+      }));
+
+      setSearchedBooks(bookData);
+    }
+  }, [data]);
 
   // create method to search for books and set state on form submit
   const handleFormSubmit = async (event) => {
@@ -45,18 +71,7 @@ const SearchBooks = () => {
         throw new Error(`Error: ${error.message}`);
       }
 
-      if (data) {
-        const bookData = data.searchBooks.map((book) => ({
-          bookId: book.bookId,
-          authors: book.authors || ['No author to display'],
-          title: book.title,
-          description: book.description,
-          image: book.image || '',
-        }));
-
-        setSearchedBooks(bookData);
-        setSearchInput('');
-      }
+      setSearchInput('');
     } catch (err) {
       console.error('Error during book search:', err);
     }
