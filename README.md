@@ -28,7 +28,9 @@ After installing the application, navigate to the login page and either log in o
 
 Link for deployed application:
 
-[Book Search Engine]([https://kanban-board-y281.onrender.com](https://book-search-engine-6f2p.onrender.com))
+
+[Book Search Engine](https://book-search-engine-6f2p.onrender.com)
+
 
 ## Tests
 
