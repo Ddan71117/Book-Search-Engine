@@ -7,10 +7,11 @@ import {
   Card,
   Row
 } from 'react-bootstrap';
-
+import { useLazyQuery, useMutation } from '@apollo/client';
 import Auth from '../utils/auth';
-import { saveBook, searchGoogleBooks } from '../utils/API';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
+import { ADD_BOOK_TO_USER } from '../utils/mutations';
+import { SEARCH_BOOKS } from '../utils/queries';
 
 const SearchBooks = () => {
   // create state for holding returned google api data
@@ -27,6 +28,8 @@ const SearchBooks = () => {
     return () => saveBookIds(savedBookIds);
   });
 
+  const [searchBooks, { data, error }] = useLazyQuery(SEARCH_BOOKS);
+
   // create method to search for books and set state on form submit
   const handleFormSubmit = async (event) => {
     event.preventDefault();
@@ -36,28 +39,30 @@ const SearchBooks = () => {
     }
 
     try {
-      const response = await searchGoogleBooks(searchInput);
+      searchBooks({ variables: { query: searchInput } });
 
-      if (!response.ok) {
-        throw new Error('something went wrong!');
+      if (error) {
+        throw new Error(`Error: ${error.message}`);
       }
 
-      const { items } = await response.json();
+      if (data) {
+        const bookData = data.searchBooks.map((book) => ({
+          bookId: book.bookId,
+          authors: book.authors || ['No author to display'],
+          title: book.title,
+          description: book.description,
+          image: book.image || '',
+        }));
 
-      const bookData = items.map((book) => ({
-        bookId: book.id,
-        authors: book.volumeInfo.authors || ['No author to display'],
-        title: book.volumeInfo.title,
-        description: book.volumeInfo.description,
-        image: book.volumeInfo.imageLinks?.thumbnail || '',
-      }));
-
-      setSearchedBooks(bookData);
-      setSearchInput('');
+        setSearchedBooks(bookData);
+        setSearchInput('');
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error during book search:', err);
     }
   };
+
+  const [addBookToUser] = useMutation(ADD_BOOK_TO_USER);
 
   // create function to handle saving a book to our database
   const handleSaveBook = async (bookId) => {
@@ -72,11 +77,9 @@ const SearchBooks = () => {
     }
 
     try {
-      const response = await saveBook(bookToSave, token);
-
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
+      await addBookToUser({
+        variables: { userId: Auth.getProfile().data._id, book: bookToSave }
+      });
 
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);

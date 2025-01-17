@@ -52,6 +52,16 @@ export const deleteBook = (bookId, token) => {
 
 // make a search to google books api
 // https://www.googleapis.com/books/v1/volumes?q=harry+potter
-export const searchGoogleBooks = (query) => {
-  return fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+export const searchGoogleBooks = async (query, retries = 5, delay = 1000) => {
+  try {
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+    if (response.status === 429 && retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return searchGoogleBooks(query, retries - 1, delay * 2);
+    }
+    return response;
+  } catch (err) {
+    console.error(err);
+    throw new Error('something went wrong!');
+  }
 };
