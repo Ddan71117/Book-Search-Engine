@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Container,
   Card,
@@ -21,6 +21,9 @@ const SavedBooks = () => {
   });
   const [deleteBook] = useMutation(DELETE_BOOK);
   const userData = data?.me || {};
+
+  // create state to hold saved bookId values
+  const [savedBookIds, setSavedBookIds] = useState(userData.savedBooks?.map(book => book.bookId) || []);
 
   // use this to determine if `useEffect()` hook needs to run again
   const userDataLength = Object.keys(userData).length;
@@ -58,7 +61,10 @@ const SavedBooks = () => {
         variables: { userId: Auth.getProfile().data._id, bookId }
       });
 
-      // upon success, remove book's id from localStorage
+      // upon success, remove book's id from localStorage and update state
+      const updatedSavedBookIds = savedBookIds.filter((id) => id !== bookId);
+      setSavedBookIds(updatedSavedBookIds);
+      savedBookIds(updatedSavedBookIds);
     } catch (err) {
       console.error(err);
     }
